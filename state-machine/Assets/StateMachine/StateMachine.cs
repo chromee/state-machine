@@ -10,7 +10,7 @@ namespace HC.AI
     /// <summary>
     /// ステートマシン
     /// </summary>
-    public class StateMachine : MonoBehaviour
+    public abstract class StateMachine : MonoBehaviour
     {
         #region variable
 
@@ -20,12 +20,11 @@ namespace HC.AI
         /// <summary>
         /// ステートのマップ
         /// </summary>
-        private Dictionary<Type, State> _stateMap = new Dictionary<Type, State>();
+        private readonly Dictionary<Type, State> _stateMap = new Dictionary<Type, State>();
 
         /// <summary>
         /// 現在ステート
         /// </summary>
-        [SerializeField, Tooltip("初期ステートをここに設定")]
         private State _currentState = null;
 
         /// <summary>
@@ -48,10 +47,7 @@ namespace HC.AI
 
         private void Awake()
         {
-            foreach (var state in GetComponents<State>())
-            {
-                Register(state);
-            }
+            RegisterStates();
         }
 
         private void Start()
@@ -107,12 +103,16 @@ namespace HC.AI
         /// <summary>
         /// ステートの登録
         /// </summary>
-        /// <param name="state">登録するステート</param>
         public void Register(State state)
         {
+            if (_stateMap.Count == 0) SetFirstState(state);
             _stateMap.Add(state.GetType(), state);
-            state.StateMachine = this;
         }
+
+        /// <summary>
+        /// ステートの登録
+        /// </summary>
+        public abstract void RegisterStates();
 
         /// <summary>
         /// ステートの遷移予約

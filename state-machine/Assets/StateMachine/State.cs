@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine;
 using UniRx;
 using UniRx.Triggers;
 using HC.UniRxCustom;
@@ -33,8 +32,7 @@ namespace HC.AI
     /// <summary>
     /// ステートクラス
     /// </summary>
-    [RequireComponent(typeof(StateMachine))]
-    public abstract class State : MonoBehaviour
+    public abstract class State
     {
         #region variable
 
@@ -46,12 +44,12 @@ namespace HC.AI
         /// <summary>
         /// ステート開始ストリーム
         /// </summary>
-        private Subject<Unit> _begin = new Subject<Unit>();
+        private readonly Subject<Unit> _begin = new Subject<Unit>();
 
         /// <summary>
         /// ステート終了ストリーム
         /// </summary>
-        private Subject<Unit> _end = new Subject<Unit>();
+        private readonly Subject<Unit> _end = new Subject<Unit>();
 
         #endregion
 
@@ -60,19 +58,25 @@ namespace HC.AI
         /// <summary>
         /// ステート開始ストリーム
         /// </summary>
-        public IObservable<Unit> BeginStream { get { return _begin.AsObservable(); } }
+        public IObservable<Unit> BeginStream
+        {
+            get { return _begin.AsObservable(); }
+        }
 
         /// <summary>
         /// ステート終了ストリーム
         /// </summary>
-        public IObservable<Unit> EndStream { get { return _end.AsObservable(); } }
+        public IObservable<Unit> EndStream
+        {
+            get { return _end.AsObservable(); }
+        }
 
         /// <summary>
         /// Updateストリーム
         /// </summary>
         public IObservable<Unit> UpdateStream
         {
-            get { return StateStream(this.UpdateAsObservable()); }
+            get { return StateStream(StateMachine.UpdateAsObservable()); }
         }
 
         /// <summary>
@@ -80,7 +84,7 @@ namespace HC.AI
         /// </summary>
         public IObservable<Unit> FixedUpdateStream
         {
-            get { return StateStream(this.FixedUpdateAsObservable()); }
+            get { return StateStream(StateMachine.FixedUpdateAsObservable()); }
         }
 
         /// <summary>
@@ -88,7 +92,7 @@ namespace HC.AI
         /// </summary>
         public IObservable<Unit> LateUpdateStream
         {
-            get { return StateStream(this.LateUpdateAsObservable()); }
+            get { return StateStream(StateMachine.LateUpdateAsObservable()); }
         }
 
         /// <summary>
@@ -96,7 +100,7 @@ namespace HC.AI
         /// </summary>
         public IObservable<Unit> OnDrawGizmosStream
         {
-            get { return StateStream(this.OnDrawGizmosAsObservable()); }
+            get { return StateStream(StateMachine.OnDrawGizmosAsObservable()); }
         }
 
         /// <summary>
@@ -104,7 +108,7 @@ namespace HC.AI
         /// </summary>
         public IObservable<Unit> OnGUIStream
         {
-            get { return StateStream(this.OnGUIAsObservable()); }
+            get { return StateStream(StateMachine.OnGUIAsObservable()); }
         }
 
         /// <summary>
@@ -117,12 +121,17 @@ namespace HC.AI
                 .SkipUntil(BeginStream)
                 // EndStreamがOnNextされるまで
                 .TakeUntil(EndStream)
-                .RepeatUntilDestroy(gameObject)
+                .RepeatUntilDestroy(StateMachine)
                 .Publish()
                 .RefCount();
         }
 
         #endregion
+
+        protected State(StateMachine stateMachine)
+        {
+            StateMachine = stateMachine;
+        }
 
         #region method
 
