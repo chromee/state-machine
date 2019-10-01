@@ -52,6 +52,11 @@ namespace HC.AI
 
         private void Start()
         {
+            foreach (var state in _stateMap.Values)
+            {
+                state.Initialize();
+            }
+
             if (AutoStart)
             {
                 StartFSM();
@@ -107,6 +112,7 @@ namespace HC.AI
         {
             if (_stateMap.Count == 0) SetFirstState(state);
             _stateMap.Add(state.GetType(), state);
+            state.StateMachine = this;
         }
 
         /// <summary>
@@ -120,6 +126,14 @@ namespace HC.AI
         public void Transition<T>() where T : State
         {
             _nextState = typeof(T);
+        }
+
+        public void Transition<TS, T1>(T1 val) where TS : State<T1>
+        {
+            _nextState = typeof(TS);
+            // FIXME: アップキャストな～～～
+            var state = _stateMap[_nextState] as State<T1>;
+            state?.SetVal(val);
         }
 
         #endregion

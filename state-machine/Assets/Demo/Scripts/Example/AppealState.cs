@@ -6,21 +6,30 @@ using HC.Extensions;
 
 public class AppealState : State
 {
-    public AppealState(StateMachine stateMachine, Animator animator, Text tutorialText) : base(stateMachine)
+    private Animator _animator;
+    private Text _tutorialText;
+
+    public AppealState(Animator animator, Text tutorialText)
+    {
+        _animator = animator;
+        _tutorialText = tutorialText;
+    }
+
+    public override void Initialize()
     {
         // アピールアニメーションを再生する
-        BeginStream.Subscribe(_ => animator.Play("Appeal"));
+        BeginStream.Subscribe(_ => _animator.Play("Appeal"));
 
         // チュートリアルの文言を変更する
-        BeginStream.Subscribe(_ => tutorialText.text =
+        BeginStream.Subscribe(_ => _tutorialText.text =
             (int) IdleState.TRANSITION_TO_APPEAL_DURATION + "秒経過したのでアピールステートに遷移しました");
 
         // アピールアニメーションの再生が完了したら待機ステートに遷移する
-        UpdateStream.Where(_ => animator.IsCompleted(Animator.StringToHash("Appeal")))
-            .Subscribe(_ => Transition<IdleState>());
+        UpdateStream.Where(_ => _animator.IsCompleted(Animator.StringToHash("Appeal")))
+            .Subscribe(_ => StateMachine.Transition<IdleState, int>(100));
 
         // 左クリックされたら走行ステートに遷移する
         UpdateStream.Where(_ => Input.GetMouseButtonDown(0))
-            .Subscribe(_ => Transition<RunState>());
+            .Subscribe(_ => StateMachine.Transition<RunState>());
     }
 }

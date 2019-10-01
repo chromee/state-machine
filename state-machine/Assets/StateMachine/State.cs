@@ -114,7 +114,7 @@ namespace HC.AI
         /// <summary>
         /// このステートが現在ステートの間だけメッセージが流れるストリーム
         /// </summary>
-        protected IObservable<T> StateStream<T>(IObservable<T> source)
+        protected virtual IObservable<T> StateStream<T>(IObservable<T> source)
         {
             return source
                 // BeginStreamがOnNextされてから
@@ -128,17 +128,14 @@ namespace HC.AI
 
         #endregion
 
-        protected State(StateMachine stateMachine)
-        {
-            StateMachine = stateMachine;
-        }
-
         #region method
+
+        public abstract void Initialize();
 
         /// <summary>
         /// ステートの開始通知(StateMachine以外では基本的に呼び出さない)
         /// </summary>
-        public void StateBegin()
+        public virtual void StateBegin()
         {
             _begin.OnNext(default(Unit));
         }
@@ -151,14 +148,37 @@ namespace HC.AI
             _end.OnNext(default(Unit));
         }
 
-        /// <summary>
-        /// ステートの遷移予約
-        /// </summary>
-        protected void Transition<T>() where T : State
+        #endregion
+    }
+
+    public abstract class State<T> : State
+    {
+        private readonly Subject<T> _begin = new Subject<T>();
+
+        private T _val;
+
+        public void SetVal(T val)
         {
-            StateMachine.Transition<T>();
+            _val = val;
         }
 
-        #endregion
+        public new IObservable<T> BeginStream => _begin.AsObservable();
+
+        public override void StateBegin()
+        {
+            _begin.OnNext(_val);
+        }
+        
+        protected override IObservable<T> StateStream<T>(IObservable<T> source)
+        {
+            return source
+                // BeginStreamがOnNextされてから
+                .SkipUntil(BeginStream)
+                // EndStreamがOnNextされるまで
+                .TakeUntil(EndStream)
+                .RepeatUntilDestroy(StateMachine)
+                .Publish()
+                .RefCount();
+        }
     }
 }
