@@ -32,24 +32,26 @@ namespace HC.AI
     /// <summary>
     /// ステートクラス
     /// </summary>
-    public abstract class State
+    public abstract class State<T> : IState
     {
         #region variable
 
         /// <summary>
         /// ステートマシン
         /// </summary>
-        public StateMachine StateMachine { get; set; }
+        protected StateMachine StateMachine { get; private set; }
 
         /// <summary>
         /// ステート開始ストリーム
         /// </summary>
-        private readonly Subject<Unit> _begin = new Subject<Unit>();
+        private readonly Subject<T> _begin = new Subject<T>();
 
         /// <summary>
         /// ステート終了ストリーム
         /// </summary>
         private readonly Subject<Unit> _end = new Subject<Unit>();
+
+        private T _val;
 
         #endregion
 
@@ -58,63 +60,42 @@ namespace HC.AI
         /// <summary>
         /// ステート開始ストリーム
         /// </summary>
-        public IObservable<Unit> BeginStream
-        {
-            get { return _begin.AsObservable(); }
-        }
+        protected IObservable<T> BeginStream => _begin.AsObservable();
 
         /// <summary>
         /// ステート終了ストリーム
         /// </summary>
-        public IObservable<Unit> EndStream
-        {
-            get { return _end.AsObservable(); }
-        }
+        protected IObservable<Unit> EndStream => _end.AsObservable();
 
         /// <summary>
         /// Updateストリーム
         /// </summary>
-        public IObservable<Unit> UpdateStream
-        {
-            get { return StateStream(StateMachine.UpdateAsObservable()); }
-        }
+        protected IObservable<Unit> UpdateStream => StateStream(StateMachine.UpdateAsObservable());
 
         /// <summary>
         /// FixedUpdateストリーム
         /// </summary>
-        public IObservable<Unit> FixedUpdateStream
-        {
-            get { return StateStream(StateMachine.FixedUpdateAsObservable()); }
-        }
+        protected IObservable<Unit> FixedUpdateStream => StateStream(StateMachine.FixedUpdateAsObservable());
 
         /// <summary>
         /// LateUpdateストリーム
         /// </summary>
-        public IObservable<Unit> LateUpdateStream
-        {
-            get { return StateStream(StateMachine.LateUpdateAsObservable()); }
-        }
+        protected IObservable<Unit> LateUpdateStream => StateStream(StateMachine.LateUpdateAsObservable());
 
         /// <summary>
         /// OnDrawGizmosストリーム
         /// </summary>
-        public IObservable<Unit> OnDrawGizmosStream
-        {
-            get { return StateStream(StateMachine.OnDrawGizmosAsObservable()); }
-        }
+        protected IObservable<Unit> OnDrawGizmosStream => StateStream(StateMachine.OnDrawGizmosAsObservable());
 
         /// <summary>
         /// OnGUIストリーム
         /// </summary>
-        public IObservable<Unit> OnGUIStream
-        {
-            get { return StateStream(StateMachine.OnGUIAsObservable()); }
-        }
+        protected IObservable<Unit> OnGuiStream => StateStream(StateMachine.OnGUIAsObservable());
 
         /// <summary>
         /// このステートが現在ステートの間だけメッセージが流れるストリーム
         /// </summary>
-        protected virtual IObservable<T> StateStream<T>(IObservable<T> source)
+        protected IObservable<TT> StateStream<TT>(IObservable<TT> source)
         {
             return source
                 // BeginStreamがOnNextされてから
@@ -137,7 +118,7 @@ namespace HC.AI
         /// </summary>
         public virtual void StateBegin()
         {
-            _begin.OnNext(default(Unit));
+            _begin.OnNext(_val);
         }
 
         /// <summary>
@@ -145,40 +126,26 @@ namespace HC.AI
         /// </summary>
         public void StateEnd()
         {
-            _end.OnNext(default(Unit));
+            _end.OnNext(Unit.Default);
         }
 
-        #endregion
-    }
-
-    public abstract class State<T> : State
-    {
-        private readonly Subject<T> _begin = new Subject<T>();
-
-        private T _val;
-
+        /// <summary>
+        /// BeginStreamで流す値のSet(StateMachine以外では基本的に呼び出さない)
+        /// </summary>
         public void SetVal(T val)
         {
             _val = val;
         }
 
-        public new IObservable<T> BeginStream => _begin.AsObservable();
+        public void SetStateMachine(StateMachine stateMachine)
+        {
+            StateMachine = stateMachine;
+        }
 
-        public override void StateBegin()
-        {
-            _begin.OnNext(_val);
-        }
-        
-        protected override IObservable<T> StateStream<T>(IObservable<T> source)
-        {
-            return source
-                // BeginStreamがOnNextされてから
-                .SkipUntil(BeginStream)
-                // EndStreamがOnNextされるまで
-                .TakeUntil(EndStream)
-                .RepeatUntilDestroy(StateMachine)
-                .Publish()
-                .RefCount();
-        }
+        #endregion
+    }
+
+    public abstract class StateBase : State<Unit>
+    {
     }
 }

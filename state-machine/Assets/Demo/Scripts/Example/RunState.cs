@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using UniRx;
 using HC.AI;
 
-public class RunState : State
+public class RunState : StateBase
 {
     private Animator _animator;
     private Text _tutorialText;

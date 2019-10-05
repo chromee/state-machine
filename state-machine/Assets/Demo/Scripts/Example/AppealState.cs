@@ -4,7 +4,7 @@ using UniRx;
 using HC.AI;
 using HC.Extensions;
 
-public class AppealState : State
+public class AppealState : StateBase
 {
     private Animator _animator;
     private Text _tutorialText;

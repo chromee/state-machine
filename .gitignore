@@ -32,3 +32,9 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# JetBrains Rider generated files
+state-machine/.idea/
+state-machine/Assets/Plugins/Editor/JetBrains/
+state-machine/Assets/Plugins/Editor/JetBrains.meta
+state-machine/Assets/Plugins/Editor.meta

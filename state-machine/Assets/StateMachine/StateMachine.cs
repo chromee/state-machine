@@ -20,26 +20,23 @@ namespace HC.AI
         /// <summary>
         /// ステートのマップ
         /// </summary>
-        private readonly Dictionary<Type, State> _stateMap = new Dictionary<Type, State>();
+        private readonly Dictionary<Type, IState> _stateMap = new Dictionary<Type, IState>();
 
         /// <summary>
         /// 現在ステート
         /// </summary>
-        private State _currentState = null;
+        private IState _currentState;
 
         /// <summary>
         /// 遷移先ステート
         /// </summary>
-        private Type _nextState = null;
+        private Type _nextState;
 
         #endregion
 
         #region property
 
-        public State CurrentState
-        {
-            get { return _currentState; }
-        }
+        public IState CurrentState => _currentState;
 
         #endregion
 
@@ -100,38 +97,31 @@ namespace HC.AI
         /// 初期ステートの登録
         /// </summary>
         /// <param name="firstState">初期ステート</param>
-        public void SetFirstState(State firstState)
-        {
-            _currentState = firstState;
-        }
+        public void SetFirstState(IState firstState) => _currentState = firstState;
 
         /// <summary>
         /// ステートの登録
         /// </summary>
-        public void Register(State state)
+        public void Register(IState state)
         {
             if (_stateMap.Count == 0) SetFirstState(state);
             _stateMap.Add(state.GetType(), state);
-            state.StateMachine = this;
+            state.SetStateMachine(this);
         }
 
         /// <summary>
-        /// ステートの登録
+        /// 複数ステートの登録
         /// </summary>
         public abstract void RegisterStates();
 
         /// <summary>
         /// ステートの遷移予約
         /// </summary>
-        public void Transition<T>() where T : State
-        {
-            _nextState = typeof(T);
-        }
+        public void Transition<T>() where T : StateBase => _nextState = typeof(T);
 
         public void Transition<TS, T1>(T1 val) where TS : State<T1>
         {
             _nextState = typeof(TS);
-            // FIXME: アップキャストな～～～
             var state = _stateMap[_nextState] as State<T1>;
             state?.SetVal(val);
         }
